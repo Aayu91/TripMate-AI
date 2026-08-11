@@ -99,12 +99,13 @@ client = MultiServerMCPClient(
         "weather": {
             "transport": "stdio",
 
-            # Uses the Python executable from the active Conda environment.
+            # Uses the Python executable from the active environment.
             "command": sys.executable,
 
-            # Uses the weather server inside the current project folder.
+            # FIX: was hardcoded "D:\\TripMate-AI\\custom_weather_mcp_server.py"
+            # Now uses the dynamic path relative to this file's location.
             "args": [
-                str("D:\TripMate-AI\custom_weather_mcp_server.py"),
+                str(WEATHER_SERVER_PATH),
             ],
 
             "env": _subprocess_env(
@@ -152,9 +153,9 @@ async def _get_server_tool(
         )
 
         if not WEATHER_SERVER_PATH.is_file():
+            # FIX: was hardcoded "D:\\TripMate-AI\\custom_weather_mcp_server.py"
             raise FileNotFoundError(
-                f"Weather MCP server not found: "
-                f"D:\TripMate-AI\custom_weather_mcp_server.py"
+                f"Weather MCP server not found: {WEATHER_SERVER_PATH}"
             )
 
     # Important: load only the requested MCP server.
@@ -217,9 +218,7 @@ async def get_all_tools() -> None:
                 or "no tools"
             )
 
-            print(
-                f"{server_name}: OK -> {tool_names}"
-            )
+            print(f"{server_name}: OK -> {tool_names}")
 
         except Exception as exc:
             print(
@@ -310,9 +309,7 @@ Do not add any explanation.
 
     response = llm.invoke(prompt)
 
-    destination = str(
-        response.content
-    ).strip()
+    destination = str(response.content).strip()
 
     if not destination:
         raise ValueError(
