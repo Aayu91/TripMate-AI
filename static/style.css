@@ -259,42 +259,65 @@ textarea::placeholder {
 }
 
 .guardrail-badge {
-  border: 1px solid rgba(34, 197, 94, 0.3);
-  background: rgba(34, 197, 94, 0.12);
-  color: #86efac;
-  padding: 9px 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid rgba(34, 197, 94, 0.45);
+  background: rgba(34, 197, 94, 0.16);
+  color: #4ade80;
+  padding: 8px 18px;
   border-radius: 999px;
-  font-size: 0.82rem;
+  font-size: 0.88rem;
   font-weight: 800;
   white-space: nowrap;
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.22);
 }
 
 .guardrail-badge.blocked {
-  border-color: rgba(239, 68, 68, 0.35);
-  background: rgba(239, 68, 68, 0.13);
-  color: #fecaca;
+  border-color: rgba(239, 68, 68, 0.45);
+  background: rgba(239, 68, 68, 0.18);
+  color: #f87171;
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.25);
 }
 
 .supervisor-reasoning {
-  color: #cbd5e1;
+  color: #e2e8f0;
   line-height: 1.7;
-  margin-bottom: 18px;
+  margin-bottom: 20px;
+  font-size: 1.05rem;
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  padding: 16px 20px;
+  border-radius: 16px;
 }
 
 .agent-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 12px;
+  margin-top: 14px;
 }
 
 .agent-chip {
-  padding: 10px 14px;
-  border-radius: 14px;
-  border: 1px solid rgba(96, 165, 250, 0.3);
-  background: rgba(37, 99, 235, 0.13);
-  color: #dbeafe;
-  font-size: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(30, 58, 138, 0.7), rgba(67, 56, 202, 0.7));
+  border: 1px solid rgba(129, 140, 248, 0.45);
+  color: #e0e7ff;
+  font-size: 0.95rem;
   font-weight: 750;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(12px);
+  transition: all 0.25s ease;
+}
+
+.agent-chip:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(99, 102, 241, 0.5);
+  border-color: rgba(165, 180, 252, 0.85);
 }
 
 .result-actions {
@@ -335,8 +358,9 @@ textarea::placeholder {
 }
 
 .pdf-content {
-  background: #ffffff;
-  color: #111827;
+  background: rgba(15, 23, 42, 0.55);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  color: #f1f5f9;
   border-radius: 22px;
   padding: 28px;
 }
@@ -349,8 +373,8 @@ textarea::placeholder {
 }
 
 .result-box {
-  background: #ffffff;
-  color: #1f2937;
+  background: transparent;
+  color: #f1f5f9;
   border: none;
   padding: 0;
   white-space: normal;
@@ -360,10 +384,10 @@ textarea::placeholder {
 .result-box h1,
 .result-box h2,
 .result-box h3 {
-  color: #0f172a;
-  margin-top: 26px;
-  margin-bottom: 12px;
-  line-height: 1.25;
+  color: #f8fafc;
+  margin-top: 28px;
+  margin-bottom: 14px;
+  line-height: 1.3;
   font-weight: 800;
 }
 
@@ -374,70 +398,79 @@ textarea::placeholder {
 }
 
 .result-box h1 {
-  font-size: 2rem;
-  border-bottom: 3px solid #2563eb;
-  padding-bottom: 10px;
+  font-size: 1.85rem;
+  background: linear-gradient(135deg, #60a5fa, #c084fc);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  border-bottom: 2px solid rgba(96, 165, 250, 0.3);
+  padding-bottom: 12px;
 }
 
 .result-box h2 {
-  font-size: 1.45rem;
-  border-left: 5px solid #2563eb;
-  padding: 10px 0 10px 12px;
-  background: #eff6ff;
-  border-radius: 10px;
+  font-size: 1.35rem;
+  border-left: 4px solid #3b82f6;
+  padding: 10px 14px;
+  background: rgba(30, 58, 138, 0.35);
+  border-radius: 12px;
+  color: #93c5fd;
 }
 
 .result-box h3 {
-  font-size: 1.15rem;
-  color: #1d4ed8;
+  font-size: 1.12rem;
+  color: #c084fc;
 }
 
 .result-box p {
   margin-bottom: 14px;
   line-height: 1.75;
-  color: #374151;
+  color: #cbd5e1;
 }
 
 .result-box ul,
 .result-box ol {
-  margin: 10px 0 18px 24px;
-  color: #374151;
+  margin: 12px 0 20px 24px;
+  color: #cbd5e1;
 }
 
 .result-box li {
   margin-bottom: 8px;
-  line-height: 1.65;
+  line-height: 1.7;
 }
 
 .result-box strong {
-  color: #111827;
+  color: #f8fafc;
   font-weight: 800;
 }
 
 .result-box hr {
   border: none;
-  border-top: 1px solid #e5e7eb;
-  margin: 24px 0;
+  border-top: 1px solid rgba(148, 163, 184, 0.2);
+  margin: 26px 0;
 }
 
 .result-box table {
   width: 100%;
   border-collapse: collapse;
-  margin: 18px 0;
-  color: #374151;
+  margin: 20px 0;
+  color: #cbd5e1;
+  background: rgba(15, 23, 42, 0.7);
+  border-radius: 14px;
+  overflow: hidden;
 }
 
 .result-box th,
 .result-box td {
-  border: 1px solid #e5e7eb;
-  padding: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  padding: 12px 16px;
   text-align: left;
 }
 
 .result-box th {
-  background: #eff6ff;
-  color: #111827;
+  background: rgba(30, 58, 138, 0.6);
+  color: #f8fafc;
   font-weight: 800;
+}
 }
 
 .approval-section {
@@ -542,6 +575,30 @@ footer {
 @media print {
   body {
     background: #ffffff;
+    color: #111827;
+  }
+
+  .pdf-content {
+    background: #ffffff !important;
+    color: #111827 !important;
+    border: none !important;
+  }
+
+  .result-box {
+    color: #111827 !important;
+  }
+
+  .result-box h1,
+  .result-box h2,
+  .result-box h3,
+  .result-box strong {
+    color: #111827 !important;
+    -webkit-text-fill-color: #111827 !important;
+  }
+
+  .result-box p,
+  .result-box li {
+    color: #374151 !important;
   }
 
   .planner-card,
