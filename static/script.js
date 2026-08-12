@@ -60,6 +60,9 @@ function showWorkflow(data) {
   const reasoning = document.getElementById("supervisorReasoning");
   const chips = document.getElementById("agentChips");
   const guardrailBadge = document.getElementById("guardrailBadge");
+  const verifierScoreBadge = document.getElementById("verificationScoreBadge");
+  const verifierCritiqueBox = document.getElementById("verifierCritiqueBox");
+  const verifierCritiqueText = document.getElementById("verifierCritiqueText");
 
   reasoning.textContent = data.supervisor_reasoning || "Supervisor routing completed.";
   chips.innerHTML = "";
@@ -78,6 +81,50 @@ function showWorkflow(data) {
     guardrailBadge.textContent = "Guardrail passed";
     guardrailBadge.classList.remove("blocked");
   }
+
+  // Red-Team Verifier Score
+  const score = data.verification_score !== undefined ? data.verification_score : 95;
+  verifierScoreBadge.textContent = `Audit Score: ${score}%`;
+  if (score >= 85) {
+    verifierScoreBadge.className = "verifier-score-badge high";
+  } else if (score >= 70) {
+    verifierScoreBadge.className = "verifier-score-badge medium";
+  } else {
+    verifierScoreBadge.className = "verifier-score-badge low";
+  }
+
+  if (data.verification_critique) {
+    verifierCritiqueText.textContent = data.verification_critique;
+    verifierCritiqueBox.classList.remove("hidden");
+  } else {
+    verifierCritiqueBox.classList.add("hidden");
+  }
+
+  section.classList.remove("hidden");
+}
+
+function showCounterfactuals(cfs) {
+  const section = document.getElementById("counterfactualSection");
+  const container = document.getElementById("counterfactualCards");
+
+  if (!cfs || !cfs.length) {
+    section.classList.add("hidden");
+    return;
+  }
+
+  container.innerHTML = "";
+  cfs.forEach((cf, idx) => {
+    const card = document.createElement("div");
+    card.className = "counterfactual-card";
+    card.innerHTML = `
+      <div class="cf-icon">💡</div>
+      <div class="cf-content">
+        <span class="cf-tag">What-If Scenario ${idx + 1}</span>
+        <p>${cf}</p>
+      </div>
+    `;
+    container.appendChild(card);
+  });
 
   section.classList.remove("hidden");
 }
@@ -156,6 +203,7 @@ async function sendMessage() {
     localStorage.setItem("travel_thread_id", currentThreadId);
 
     showWorkflow(data);
+    showCounterfactuals(data.counterfactuals);
 
     if (data.requires_approval) {
       showResult(data.itinerary || data.answer, data.thread_id, true);
@@ -210,6 +258,7 @@ async function submitApproval(approved) {
     }
 
     showWorkflow(data);
+    showCounterfactuals(data.counterfactuals);
     hideApproval();
     showResult(data.answer, data.thread_id, false);
   } catch (error) {

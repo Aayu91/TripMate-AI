@@ -69,13 +69,28 @@
     <section id="workflowSection" class="workflow-section hidden">
       <div class="workflow-header">
         <div>
-          <span class="eyebrow">Supervisor Agent</span>
-          <h2>Execution Plan</h2>
+          <span class="eyebrow">Supervisor & Red-Team Verifier</span>
+          <h2>Execution & Verification Plan</h2>
         </div>
-        <span id="guardrailBadge" class="guardrail-badge">Guardrail passed</span>
+        <div class="badge-group">
+          <span id="guardrailBadge" class="guardrail-badge">Guardrail passed</span>
+          <span id="verificationScoreBadge" class="verifier-score-badge">Audit Score: 100%</span>
+        </div>
       </div>
       <p id="supervisorReasoning" class="supervisor-reasoning"></p>
+      <div id="verifierCritiqueBox" class="verifier-critique-box hidden">
+        <span class="eyebrow">Red-Team Verifier Audit</span>
+        <p id="verifierCritiqueText"></p>
+      </div>
       <div id="agentChips" class="agent-chips"></div>
+    </section>
+
+    <section id="counterfactualSection" class="counterfactual-section hidden">
+      <div class="counterfactual-header">
+        <span class="eyebrow">HAMACTA Counterfactual XAI</span>
+        <h2>Actionable "What-If" Trade-Offs</h2>
+      </div>
+      <div id="counterfactualCards" class="counterfactual-cards"></div>
     </section>
 
     <section id="resultSection" class="result-section hidden">
