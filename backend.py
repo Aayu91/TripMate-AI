@@ -57,7 +57,7 @@ if not GROQ_API_KEY:
 # =========================
 # LLM - Active Fast Groq Model with Auto-Retry
 # =========================
-GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+GROQ_MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-120be")
 llm = ChatGroq(
     model=GROQ_MODEL,
     api_key=GROQ_API_KEY,
