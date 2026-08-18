@@ -291,6 +291,76 @@ function copyResult() {
     });
 }
 
+async function exportCalendarICS() {
+  if (!latestAnswerMarkdown) {
+    showError("No travel plan available to export.");
+    return;
+  }
+
+  const calendarBtn = document.querySelector(".calendar-btn");
+  const oldText = calendarBtn.textContent;
+  calendarBtn.textContent = "Generating iCal...";
+  calendarBtn.disabled = true;
+
+  try {
+    const response = await fetch("/api/travel/calendar", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        itinerary: latestAnswerMarkdown,
+        destination: "Vacation Trip"
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to generate calendar file.");
+    }
+
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "tripmate-itinerary.ics";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+
+    calendarBtn.textContent = "Synced!";
+    setTimeout(() => {
+      calendarBtn.textContent = oldText;
+      calendarBtn.disabled = false;
+    }, 1500);
+  } catch (error) {
+    showError("Could not download calendar: " + error.message);
+    calendarBtn.textContent = oldText;
+    calendarBtn.disabled = false;
+  }
+}
+
+function openGoogleCalendar() {
+  if (!latestAnswerMarkdown) {
+    showError("No travel plan available.");
+    return;
+  }
+
+  const title = encodeURIComponent("✈️ TripMate AI Vacation Journey");
+  const details = encodeURIComponent(latestAnswerMarkdown.slice(0, 800) + "...\n\nPlanned by TripMate AI");
+  const location = encodeURIComponent("Travel Destination");
+  
+  // Schedule for 14 days from now as default start
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() + 14);
+  const startStr = startDate.toISOString().replace(/-|:|\.\d\d\d/g, "").slice(0, 15) + "Z";
+  
+  const endDate = new Date(startDate);
+  endDate.setDate(endDate.getDate() + 7);
+  const endStr = endDate.toISOString().replace(/-|:|\.\d\d\d/g, "").slice(0, 15) + "Z";
+
+  const gcalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${startStr}/${endStr}&details=${details}&location=${location}`;
+  window.open(gcalUrl, "_blank");
+}
+
 function downloadPDF() {
   const pdfContent = document.getElementById("pdfContent");
 

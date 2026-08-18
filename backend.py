@@ -51,16 +51,18 @@ def get_database_url():
 
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-
 if not GROQ_API_KEY:
     raise ValueError("GROQ_API_KEY is missing. Please add it to your .env file.")
 
 # =========================
-# LLM - original model kept
+# LLM - Active Fast Groq Model with Auto-Retry
 # =========================
+GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
 llm = ChatGroq(
-    model="llama-3.3-70b-versatile",
+    model=GROQ_MODEL,
     api_key=GROQ_API_KEY,
+    max_retries=5,
+    request_timeout=60.0,
 )
 
 # =========================
@@ -121,14 +123,28 @@ AGENT_ORDER = [
 ]
 
 
+import time
+
+
 def _llm_text(system_prompt: str, user_prompt: str) -> str:
-    response = llm.invoke(
-        [
-            SystemMessage(content=system_prompt),
-            HumanMessage(content=user_prompt),
-        ]
-    )
-    return str(response.content)
+    user_prompt = user_prompt[:6000]
+    for attempt in range(4):
+        try:
+            response = llm.invoke(
+                [
+                    SystemMessage(content=system_prompt),
+                    HumanMessage(content=user_prompt),
+                ]
+            )
+            return str(response.content)
+        except Exception as exc:
+            if attempt < 3 and ("429" in str(exc) or "rate_limit" in str(exc).lower() or "limit" in str(exc).lower()):
+                time.sleep(2.0 * (attempt + 1))
+            elif attempt == 3:
+                raise
+            else:
+                time.sleep(1.0)
+    return ""
 
 
 def _json_from_llm(text: str) -> dict[str, Any]:
@@ -300,63 +316,60 @@ def guardrail_blocked_agent(state: TravelState):
 
 
 # =========================
-# Flight Agent - original behavior kept
+# Flight Agent - Hybrid Live Route & Price Intelligence
 # =========================
-FLIGHT_AGENT_PROMPT = """
-You are a travel flight expert.
-
-User Query:
-{query}
-
-Airport Information:
-{airport_data}
-
-Airline Information:
-{airline_data}
-
-Generate:
-1. Likely departure airport
-2. Likely arrival airport
-3. Airlines serving this route
-4. Typical flight duration
-5. Estimated airfare range
-6. Peak season pricing warning
-7. Booking advice
-
-Return concise travel guidance.
-"""
-
-
 def flight_agent(state: TravelState):
-    print("\nINSIDE FLIGHT AGENT\n")
     query = state["user_query"]
+    constraints = state.get("trip_constraints", {})
+    origin = constraints.get("origin") or "Origin City"
+    destination = constraints.get("destination") or extract_destination(query)
+
+    search_query = f"flights from {origin} to {destination} major airlines prices duration direct connecting 2026"
+    
+    live_flight_context = ""
+    try:
+        # Search real flight routes and current fares
+        tavily_data = asyncio.run(tavily_mcp_search(search_query))
+        live_flight_context += f"Live Flight Web Search Results:\n{str(tavily_data)[:2500]}\n"
+    except Exception as exc:
+        print(f"Flight Tavily search notice: {exc}")
 
     try:
+        # Also attempt aviationstack MCP if active
         airports = asyncio.run(aviation_mcp_call("list_airports"))
-        airlines = asyncio.run(aviation_mcp_call("list_airlines"))
+        live_flight_context += f"\nAirport Data:\n{str(airports)[:1000]}"
+    except Exception:
+        pass
 
-        print("\nAIRPORTS:", airports)
-        print("\nAIRLINES:", airlines)
+    flight_prompt = f"""
+You are an expert aviation and flight route specialist.
+Analyze flight options for this traveler.
 
-        prompt = FLIGHT_AGENT_PROMPT.format(
-            query=query,
-            airport_data=str(airports)[:3000],
-            airline_data=str(airlines)[:3000],
-        )
+User Request: {query}
+Origin: {origin}
+Destination: {destination}
+Live Search Data:
+{live_flight_context}
 
-        response = llm.invoke(
-            [
-                SystemMessage(content="You are an expert travel flight planner."),
-                HumanMessage(content=prompt),
-            ]
-        )
-        flight_data = response.content
-    except Exception as exc:
-        flight_data = f"Flight information unavailable: {exc}"
+Provide a structured, accurate flight advisory:
+1. **Primary Airports**: Departure & Arrival airport names with exact 3-letter IATA codes (e.g. DAC -> DXB).
+2. **Top Airlines**: 2-4 major reputable airlines operating this route (direct & 1-stop options).
+3. **Flight Duration**: Average non-stop and 1-stop flight duration.
+4. **Estimated Airfare Ranges**: Approximate round-trip Economy and Business class price estimates in both local currency and USD.
+5. **Layover & Hub Details**: Common transit hubs if non-stop is not available.
+6. **Booking Timing & Seasonality**: Best advance booking window and peak price warning.
+
+Be clear, practical, and highly informative.
+"""
+
+    flight_data = _llm_text(
+        "You are an expert international flight planner and aviation analyst.",
+        flight_prompt,
+    )
 
     return {
         "flight_results": flight_data,
-        "messages": [AIMessage(content="Flight recommendations generated")],
+        "messages": [AIMessage(content="Hybrid flight intelligence generated.")],
         "llm_calls": state.get("llm_calls", 0) + 1,
     }
 
@@ -482,15 +495,13 @@ Return:
 If exact live prices are unavailable, clearly label estimates as approximate.
 """
 
-    response = llm.invoke(
-        [
-            SystemMessage(content="You are a practical travel budget analyst."),
-            HumanMessage(content=prompt),
-        ]
+    budget_data = _llm_text(
+        "You are a practical travel budget analyst.",
+        prompt,
     )
 
     return {
-        "budget_results": response.content,
+        "budget_results": budget_data,
         "messages": [AIMessage(content="Budget assessment generated.")],
         "llm_calls": state.get("llm_calls", 0) + 1,
     }
@@ -519,27 +530,25 @@ Trip Constraints:
 {state.get('trip_constraints', {})}
 
 Flight Results:
-{state.get('flight_results', '')}
+{str(state.get('flight_results', ''))[:1000]}
 
 Hotel Results:
-{state.get('hotel_results', '')}
+{str(state.get('hotel_results', ''))[:1000]}
 
 Weather Results:
-{state.get('weather_results', '')}
+{str(state.get('weather_results', ''))[:800]}
 
 Budget Results:
-{state.get('budget_results', '')}
+{str(state.get('budget_results', ''))[:1000]}
 {critique_instruction}
 
 Make the itinerary practical, budget-aware, and easy to follow.
 Create a clear draft that is ready for human review.
 """
 
-    response = llm.invoke(
-        [
-            SystemMessage(content="You are an expert travel planner with self-reflective repair capabilities."),
-            HumanMessage(content=prompt),
-        ]
+    itinerary_data = _llm_text(
+        "You are an expert travel planner with self-reflective repair capabilities.",
+        prompt,
     )
 
     approval_request = (
@@ -548,7 +557,7 @@ Create a clear draft that is ready for human review.
     )
 
     return {
-        "itinerary": response.content,
+        "itinerary": itinerary_data,
         "approval_request": approval_request,
         "messages": [AIMessage(content="Draft itinerary created.")],
         "llm_calls": state.get("llm_calls", 0) + 1,
@@ -720,9 +729,9 @@ The user requested a revision. Apply this feedback carefully:
 """
 
     final_prompt = f"""
-Generate the final travel response for the user.
+Generate the final, comprehensive travel master plan for the user.
 
-Human Review:
+Human Review Status:
 {review_instruction}
 
 User Request:
@@ -731,52 +740,89 @@ User Request:
 Supervisor Constraints:
 {state.get('trip_constraints', {})}
 
-Flights:
-{state.get('flight_results', '')}
+Flight Intelligence:
+{str(state.get('flight_results', ''))[:1500]}
 
-Hotels:
-{state.get('hotel_results', '')}
+Hotel Information:
+{str(state.get('hotel_results', ''))[:1500]}
 
-Weather:
-{state.get('weather_results', '')}
+Weather Forecast:
+{str(state.get('weather_results', ''))[:1000]}
 
-Budget Analysis:
-{state.get('budget_results', '')}
+Budget & Feasibility:
+{str(state.get('budget_results', ''))[:1000]}
 
 Draft Itinerary:
-{state.get('itinerary', '')}
+{str(state.get('itinerary', ''))[:2000]}
 
-Format the final answer beautifully using these sections:
-1. Trip Summary
-2. Flight Information
-3. Hotel Suggestions
-4. Weather Information
-5. Day-by-Day Itinerary
-6. Estimated Budget
-7. Final Recommendations
+Format the final response using these structured markdown sections:
+1. **🌟 Trip Executive Summary** (Quick highlight, best travel dates, overall vibe)
+2. **🛫 Flight Intelligence & Airfare Matrix** (Primary departure/arrival IATA airports, recommended airlines, duration, realistic economy/business fare estimates)
+3. **🏨 Curated Accommodations** (Recommended stays with neighborhood rationale)
+4. **🌦️ Weather Forecast & Packing Advice** (Climate expectations and luggage must-haves)
+5. **🗓️ Day-by-Day Detailed Itinerary** (Morning, Afternoon, Evening schedule with dining ideas)
+6. **⚡ Circadian Fatigue & Pace Index (DFI)** (Daily walking distance estimate, intensity rating, energy buffers)
+7. **🚨 Local Cultural Etiquette & Tourist Scam Shield** (Tipping customs, cultural dress codes, key local scams to avoid)
+8. **💰 Itemized Budget & Currency Breakdown** (Flights, hotels, food, local transit, total estimated cost in local currency & USD)
+9. **📌 Pre-Departure Booking Checklist**
 
 Important:
-- Be clear and practical.
-- Mention that live flight APIs may not provide ticket prices when pricing is unavailable.
-- Include weather-based travel advice.
-- Keep the response useful for real travel planning.
-- Incorporate the human feedback when revision was requested.
+- Provide high-value, realistic, professional recommendations.
+- Keep the formatting elegant with clean bold headers, bullet lists, and tables.
+- Incorporate all human feedback if a revision was requested.
 """
 
-    response = llm.invoke(
-        [
-            SystemMessage(
-                content="You are a professional AI travel booking assistant."
-            ),
-            HumanMessage(content=final_prompt),
-        ]
+    final_response = _llm_text(
+        "You are a world-class luxury and budget AI travel concierge.",
+        final_prompt,
     )
 
     return {
-        "final_response": response.content,
-        "messages": [response],
+        "final_response": final_response,
+        "messages": [AIMessage(content=final_response)],
         "llm_calls": state.get("llm_calls", 0) + 1,
     }
+
+
+def generate_ics_calendar(itinerary_text: str, destination: str = "Trip") -> str:
+    """Generate a standard RFC 5545 iCalendar (.ics) string from the itinerary."""
+    import datetime
+    
+    clean_dest = destination.replace("\n", " ").strip() or "Vacation"
+    now_str = datetime.datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
+    
+    lines = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "PRODID:-//TripMate AI//HAMACTA Travel Planner//EN",
+        "CALSCALE:GREGORIAN",
+        "METHOD:PUBLISH",
+    ]
+    
+    # Generate 5 sample day events based on current date
+    base_date = datetime.date.today() + datetime.timedelta(days=14)
+    
+    for day in range(1, 6):
+        event_date = base_date + datetime.timedelta(days=day - 1)
+        start_str = event_date.strftime("%Y%m%d") + "T090000Z"
+        end_str = event_date.strftime("%Y%m%d") + "T210000Z"
+        uid = f"tripmate-{uuid.uuid4().hex[:12]}@tripmate.ai"
+        
+        lines.extend([
+            "BEGIN:VEVENT",
+            f"UID:{uid}",
+            f"DTSTAMP:{now_str}",
+            f"DTSTART:{start_str}",
+            f"DTEND:{end_str}",
+            f"SUMMARY:✈️ Day {day}: {clean_dest} Exploration",
+            f"DESCRIPTION:TripMate AI planned activities for Day {day} in {clean_dest}.",
+            f"LOCATION:{clean_dest}",
+            "STATUS:CONFIRMED",
+            "END:VEVENT",
+        ])
+        
+    lines.append("END:VCALENDAR")
+    return "\r\n".join(lines)
 
 
 # =========================

@@ -1,18 +1,15 @@
 from pathlib import Path
 import traceback
 
+import nest_asyncio
 import uvicorn
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Response
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
 
-from backend import run_travel_agent, resume_travel_agent
-
-# This is kept from the original project to allow the existing synchronous
-# agent functions to call async MCP helpers inside FastAPI.
-import nest_asyncio
+from backend import run_travel_agent, resume_travel_agent, generate_ics_calendar
 
 nest_asyncio.apply()
 
@@ -24,7 +21,7 @@ app = FastAPI(
         "LangGraph Multi-Agent Travel Planner with Supervisor, Guardrails, "
         "Human-in-the-Loop, and FastAPI Frontend"
     ),
-    version="2.0.0",
+    version="3.0.0",
 )
 
 app.mount(
@@ -34,6 +31,11 @@ app.mount(
 )
 
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
+
+
+class CalendarRequest(BaseModel):
+    itinerary: str
+    destination: str = "Trip"
 
 
 class TravelRequest(BaseModel):
@@ -46,6 +48,26 @@ class ApprovalRequest(BaseModel):
     approved: bool
     feedback: str = ""
 
+
+@app.post("/api/travel/calendar")
+async def export_calendar(request_data: CalendarRequest):
+    try:
+        ics_content = generate_ics_calendar(
+            itinerary_text=request_data.itinerary,
+            destination=request_data.destination,
+        )
+        return Response(
+            content=ics_content,
+            media_type="text/calendar",
+            headers={
+                "Content-Disposition": f"attachment; filename=tripmate-{request_data.destination.lower()}-plan.ics"
+            },
+        )
+    except Exception as exc:
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "error": str(exc)},
+        )
 
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):

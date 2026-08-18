@@ -3,65 +3,69 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TripMate AI</title>
-  <link rel="stylesheet" href="/static/style.css?v=2.1">
+  <title>TripMate AI — Autonomous Travel Intelligence</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css?v=3.0">
 </head>
 <body>
   <div class="page-bg">
-    <div class="gradient-circle circle-1"></div>
-    <div class="gradient-circle circle-2"></div>
-    <div class="gradient-circle circle-3"></div>
+    <div class="gradient-glow glow-1"></div>
+    <div class="gradient-glow glow-2"></div>
+    <div class="gradient-glow glow-3"></div>
   </div>
 
   <main class="app-container">
     <section class="hero-section">
       <div class="badge">
-        ✈️ TripMate AI — LangGraph, MCP, Supervisor, Guardrails & HITL
+        <span class="badge-dot"></span>
+        HAMACTA 3.0 • Multi-Agent Autonomous Travel Intelligence
       </div>
-      <h1>Plan Your Perfect Trip with AI</h1>
+      <h1>Autonomous Travel Concierge</h1>
       <p>
-        Search flights, discover hotels, check weather, assess your budget,
-        and review the AI-generated draft before the final itinerary is created.
+        Architected with Adversarial Red-Team Verifiers, Live Hybrid Flight Intelligence, 
+        Fatigue Indexing & Counterfactual XAI Trade-Offs.
       </p>
     </section>
 
     <section class="planner-card">
       <div class="card-header">
         <div>
-          <h2>Where do you want to go?</h2>
+          <h2>Design Your Master Journey</h2>
           <p>
-            Example: Plan a complete 7 days Japan trip from India under 2 lakhs.
+            Enter your destination, departure city, budget limits, duration, or special travel preferences.
           </p>
         </div>
         <div class="status-pill">
           <span class="status-dot"></span>
-          Online
+          AI Swarm Online
         </div>
       </div>
 
       <div class="input-area">
         <textarea
           id="userInput"
-          placeholder="Plan a complete 7 days Japan trip including flights, hotels and sightseeing under 2 lakhs..."
+          placeholder="e.g., Plan a 7 days Japan trip from Delhi including flights, 4-star hotels, Kyoto day trips under 2.5 lakhs..."
         ></textarea>
         <button id="sendBtn" onclick="sendMessage()">
-          <span id="btnText">Generate Draft</span>
+          <span id="btnText">Generate Plan</span>
           <span id="btnLoader" class="loader hidden"></span>
         </button>
       </div>
 
       <div class="quick-prompts">
-        <button onclick="setPrompt('Plan a complete 7 days Japan trip from India including flights, hotels and sightseeing under 2 lakhs.')">
-          Japan Trip
+        <button onclick="setPrompt('Plan a 7-day Tokyo & Kyoto trip from Delhi including flights, scenic trains, 4-star hotels, and food spots under 2.5 lakhs.')">
+          🇯🇵 Japan Master Trip
         </button>
-        <button onclick="setPrompt('Plan a 5 days Dubai trip from Delhi with flights, hotels and sightseeing.')">
-          Dubai Trip
+        <button onclick="setPrompt('Plan a 5-day Dubai luxury getaway from Mumbai with Emirates flights, desert safari, and Atlantis day visit.')">
+          🇦🇪 Dubai Luxury 5-Day
         </button>
-        <button onclick="setPrompt('Plan a 7 days Thailand trip from Mumbai with budget hotels and sightseeing.')">
-          Thailand Trip
+        <button onclick="setPrompt('Plan a 6-day Bali wellness & adventure trip from Bangalore with budget villas and scuba diving under 1.2 lakhs.')">
+          🇮🇩 Bali Adventure
         </button>
-        <button onclick="setPrompt('Give me all country flight info.')">
-          Global Flights
+        <button onclick="setPrompt('Plan a 8-day Switzerland & Paris romantic tour from Dhaka with scenic alpine train passes.')">
+          🇨🇭 Swiss & Paris Tour
         </button>
       </div>
     </section>
@@ -70,7 +74,7 @@
       <div class="workflow-header">
         <div>
           <span class="eyebrow">Supervisor & Red-Team Verifier</span>
-          <h2>Execution & Verification Plan</h2>
+          <h2>Swarm Orchestration & Audit</h2>
         </div>
         <div class="badge-group">
           <span id="guardrailBadge" class="guardrail-badge">Guardrail passed</span>
@@ -79,7 +83,7 @@
       </div>
       <p id="supervisorReasoning" class="supervisor-reasoning"></p>
       <div id="verifierCritiqueBox" class="verifier-critique-box hidden">
-        <span class="eyebrow">Red-Team Verifier Audit</span>
+        <span class="eyebrow">Red-Team Verifier Audit Log</span>
         <p id="verifierCritiqueText"></p>
       </div>
       <div id="agentChips" class="agent-chips"></div>
@@ -88,7 +92,7 @@
     <section id="counterfactualSection" class="counterfactual-section hidden">
       <div class="counterfactual-header">
         <span class="eyebrow">HAMACTA Counterfactual XAI</span>
-        <h2>Actionable "What-If" Trade-Offs</h2>
+        <h2>Actionable "What-If" Sensitivity Trade-Offs</h2>
       </div>
       <div id="counterfactualCards" class="counterfactual-cards"></div>
     </section>
@@ -96,42 +100,48 @@
     <section id="resultSection" class="result-section hidden">
       <div class="result-header">
         <div>
-          <h2 id="resultTitle">Your AI Travel Plan</h2>
-          <p id="threadInfo">Thread ID: -</p>
+          <h2 id="resultTitle">Verified Master Travel Plan</h2>
+          <p id="threadInfo">Session: -</p>
         </div>
         <div class="result-actions">
+          <button class="calendar-btn" onclick="exportCalendarICS()" title="Export standard .ics calendar for iPhone, Android, and Outlook">
+            📲 Sync iCal (.ics)
+          </button>
+          <button class="gcal-btn" onclick="openGoogleCalendar()" title="Add primary events directly to Google Calendar">
+            📅 Google Calendar
+          </button>
           <button class="copy-btn" onclick="copyResult()">Copy</button>
           <button class="download-btn" onclick="downloadPDF()">Download PDF</button>
         </div>
       </div>
 
       <div id="pdfContent" class="pdf-content">
-        <h1 class="pdf-title">AI Travel Plan</h1>
+        <h1 class="pdf-title">TripMate AI Master Itinerary</h1>
         <div id="resultBox" class="result-box"></div>
       </div>
     </section>
 
     <section id="approvalSection" class="approval-section hidden">
-      <div class="approval-icon">👤</div>
+      <div class="approval-icon">⚡</div>
       <div class="approval-content">
-        <span class="eyebrow">Human-in-the-Loop</span>
-        <h2>Review the draft itinerary</h2>
+        <span class="eyebrow">Human-in-the-Loop Gateway</span>
+        <h2>Review & Refine Draft Itinerary</h2>
         <p id="approvalRequest">
-          Approve the draft or provide feedback before the final plan is generated.
+          Approve this verified draft to synthesize the final master plan, or specify adjustments.
         </p>
 
         <textarea
           id="approvalFeedback"
           class="feedback-input"
-          placeholder="Add revision feedback, for example: reduce the hotel cost and add one free day..."
+          placeholder="Enter revision guidance, e.g., shift hotel closer to city center and add a free rest afternoon on Day 3..."
         ></textarea>
 
         <div class="approval-actions">
           <button id="approveBtn" class="approve-btn" onclick="submitApproval(true)">
-            Approve & Generate Final
+            ✓ Approve & Generate Final
           </button>
           <button id="reviseBtn" class="revise-btn" onclick="submitApproval(false)">
-            Revise Using Feedback
+            ↺ Revise With Feedback
           </button>
         </div>
       </div>
@@ -141,11 +151,11 @@
   </main>
 
   <footer>
-    Built with FastAPI, LangGraph, Groq, PostgreSQL, Tavily, AviationStack and MCP
+    TripMate AI • HAMACTA Architecture • Powered by LangGraph, Groq, PostgreSQL & Model Context Protocol
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-  <script src="/static/script.js"></script>
+  <script src="/static/script.js?v=3.0"></script>
 </body>
 </html>
